@@ -1,29 +1,55 @@
-from threading import Lock
+import multiprocessing
+import threading
 import queue
 
 from inky import InkyPHAT
 from PIL import Image, ImageFont, ImageDraw
 
-def handle_events(shutdown_event, render_queue):
-    # while not shutdown_event.is_set():
-    #     try:
-    #         render_result = render_queue.get(block=True, timeout=0.5)
-    #         print(render_result)
-    #     except queue.Empty:
-    #         continue
+# todo: errors here are not caught... log them somehow?
+# todo: add logging instead of print
 
-    device = InkyDevice()
-    previous_item = None
-    while not shutdown_event.is_set():
-        try:
-            render_result = render_queue.get(block=True, timeout=0.5)
-            if render_result != previous_item:
-                device.write(render_result)
-            previous_item = render_result
-        except queue.Empty:
-            continue
+class InkyDeviceController(multiprocessing.Process):
 
-    print("exiting device handler process...")
+    def __init__(self, shutdown_event, render_queue):
+        super(InkyDeviceController, self).__init__()
+        self.thread_shutdown_event = shutdown_event
+        self.shutdown_event = multiprocessing.Event()
+        self.render_queue = render_queue
+
+        self.start_shutdown_listener_thread()
+
+    # we have a thread listening on the threading.event (from the signal handler) which should trigger a multiprocessing.event (to stop any future device rendering)
+    # this indirection is necessary since a multiprocessing.event cannot be safely used within the same process (potential deadlock)
+    def start_shutdown_listener_thread(self):
+        t = threading.Thread(target=self.shutdown_listener_thread,)
+        t.daemon = True
+        t.start()
+
+    def shutdown_listener_thread(self):
+
+        # why does wait deadlock? I shouldn't need a loop here...
+        while not self.thread_shutdown_event.is_set():
+            self.thread_shutdown_event.wait(timeout=0.1)
+
+
+        print('signaling inky device shutdown')
+        self.shutdown_event.set()
+
+    def run(self):
+        device = InkyDevice()
+
+        previous_item = {} # render nothing
+        while not self.shutdown_event.is_set():
+            try:
+                render_result = self.render_queue.get(block=True, timeout=0.2)
+                if render_result != previous_item:
+                    device.write(render_result)
+                previous_item = render_result
+            except queue.Empty:
+                continue
+        device.shutdown()
+
+        print("exiting inky device handler process...")
 
 class InkyDevice():
 
@@ -31,7 +57,25 @@ class InkyDevice():
         self.display = InkyPHAT("black")
         self.display.set_border(self.display.WHITE)
         self.font = ImageFont.truetype('resources/Eden_Mills_Bold.ttf', 12)
-        self.lock = Lock()
+        self.lock = threading.Lock()
+
+        self.startup()
+
+    def startup(self):
+        print('writing startup image...')
+        with self.lock:
+            img = Image.open("resources/k8s-bw.png")
+            draw = ImageDraw.Draw(img)
+            self.display.set_image(img)
+            self.display.show()
+
+    def shutdown(self):
+        print('writing shutdown image...')
+        with self.lock:
+            img = Image.open("resources/8-bit-dino.png")
+            draw = ImageDraw.Draw(img)
+            self.display.set_image(img)
+            self.display.show()
 
     def write(self, render_result):
         with self.lock:
