@@ -73,15 +73,18 @@ class NodeWatcher(threading.Thread):
 
     def run(self):
         while True:
-            for event in self.watcher.stream(self.api.list_node, pretty=True, _request_timeout=60):
-                node = Node(event)
+            try:
+                for event in self.watcher.stream(self.api.list_node, pretty=True, _request_timeout=60):
+                    node = Node(event)
 
-                self.nodes[node.identity] = node
-                self.queue.put(node)
-            
-            # hit timeout, retry
+                    self.nodes[node.identity] = node
+                    self.queue.put(node)
+                
+            except Exception as e:
+                print("error: %s" % repr(e))
+
+            # hit timeout or error, retry
             time.sleep(3)
-
 
 def get_ip_address(ifname='eth0'):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
