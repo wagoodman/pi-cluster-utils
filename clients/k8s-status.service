@@ -1,0 +1,11 @@
+[Unit]
+Description=Report K8s Status on Inky
+After=inky.service
+
+[Service]
+WorkingDirectory=/home/pi/pi-cluster-utils/clients/
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 display-k8s-status.py
+
+[Install]
+WantedBy=default.target

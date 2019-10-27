@@ -1,0 +1,10 @@
+[Unit]
+Description=Inky RPC Service
+
+[Service]
+WorkingDirectory=/home/pi/pi-cluster-utils/inky-service/
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 main.py
+
+[Install]
+WantedBy=default.target

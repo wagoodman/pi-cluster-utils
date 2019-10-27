@@ -5,6 +5,8 @@ import queue
 from inky import InkyPHAT
 from PIL import Image, ImageFont, ImageDraw
 
+from screen import Location
+
 # todo: errors here are not caught... log them somehow?
 # todo: add logging instead of print
 
@@ -74,8 +76,27 @@ class InkyDevice():
         with self.lock:
             img = Image.open("resources/8-bit-dino.png")
             draw = ImageDraw.Draw(img)
+
+            font = ImageFont.truetype('resources/Eden_Mills_Bold.ttf', 28)
+            
+            message = "offline    "
+            message_width, message_height = self.get_text_size(message, font)
+            x, y = Location.CenterRight.place(message, font, message_width, message_height, self.display.WIDTH, self.display.HEIGHT)
+            draw.text((x, y), message, self.display.BLACK, font)
+
             self.display.set_image(img)
             self.display.show()
+
+    def get_text_size(self, message, font):
+        # render the text in another text buffer to get the dimensions
+        message_width, message_height = 0,0
+        for line in message.split("\n"):
+            partial_width, partial_height = font.getsize(line)
+            message_width = max(message_width, partial_width)
+            approx_line_spacing = 1.2
+            message_height += int(partial_height*approx_line_spacing)
+
+        return message_width, message_height
 
     def write(self, render_result):
         with self.lock:
@@ -85,12 +106,7 @@ class InkyDevice():
             for location, message in render_result.items():
 
                 # render the text in another text buffer to get the dimensions
-                message_width, message_height = 0,0
-                for line in message.split("\n"):
-                    partial_width, partial_height = self.font.getsize(line)
-                    message_width = max(message_width, partial_width)
-                    approx_line_spacing = 1.2
-                    message_height += int(partial_height*approx_line_spacing)
+                message_width, message_height = self.get_text_size(message, self.font)
 
                 # find the placement of the text buffer and overlay onto the screen buffer
                 x, y = location.place(message, self.font, message_width, message_height, self.display.WIDTH, self.display.HEIGHT)

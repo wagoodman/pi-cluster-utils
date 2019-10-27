@@ -13,7 +13,8 @@ class Location(AutoName):
     LowerLeft = enum.auto()
     LowerRight = enum.auto()
     Center = enum.auto()
-
+    CenterRight = enum.auto()
+    CenterLeft = enum.auto()
 
     def place(self, message, font, message_width, message_height, width, height):
 
@@ -31,6 +32,12 @@ class Location(AutoName):
 
         if self == Location.Center:
             return width/2 - message_width/2, height/2 - message_height/2
+
+        if self == Location.CenterRight:
+            return width-message_width, height/2 - message_height/2
+
+        if self == Location.CenterLeft:
+            return 0, height/2 - message_height/2
 
         raise RuntimeError("unimplemented location placement: %s" % repr(self))
 
