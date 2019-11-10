@@ -1,6 +1,7 @@
 import multiprocessing
 import threading
 import queue
+import os
 
 from inky import InkyPHAT
 from PIL import Image, ImageFont, ImageDraw

@@ -71,7 +71,7 @@ class Screen():
         self.locations = {} # {name : location}
         self.lock = Lock()
 
-    def register_buffer(self, buffer, location_str, font_size=DEFAULT_FONT_SIZE):
+    def register_buffer(self, buffer, location_str, font_size):
         with self.lock:
             location = Location(str(location_str).lower())
             
