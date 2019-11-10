@@ -74,7 +74,7 @@ class InkyDevice():
 
         if size is None:
             size = self.default_font_size
-        size = min(30, max(size, 10))
+        size = min(50, max(size, 10))
         
         self.font = ImageFont.truetype(face, size)
 
