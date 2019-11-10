@@ -58,10 +58,24 @@ class InkyDevice():
     def __init__(self):
         self.display = InkyPHAT("black")
         self.display.set_border(self.display.WHITE)
-        self.font = ImageFont.truetype('resources/Eden_Mills_Bold.ttf', 12)
+        self.default_font_size = 12
+        self.default_font_face = 'Eden_Mills_Bold.ttf'
+        self.font_face = self.default_font_face
+        self.set_font()
         self.lock = threading.Lock()
 
         self.startup()
+
+    def set_font(self, face=None, size=None):
+        if face is None:
+            face = self.default_font_face
+        face = os.path.join('resources', os.path.basename(face))
+
+        if size is None:
+            size = self.default_font_size
+        size = min(30, max(size, 10))
+        
+        self.font = ImageFont.truetype(face, size)
 
     def startup(self):
         print('writing startup image...')
@@ -100,17 +114,20 @@ class InkyDevice():
 
     def write(self, render_result):
         with self.lock:
+
             img = Image.new("P", (self.display.WIDTH, self.display.HEIGHT))
             draw = ImageDraw.Draw(img)
 
-            for location, message in render_result.items():
+            for location, buffer_render in render_result.items():
+
+                self.set_font(size=buffer_render.font_size)
 
                 # render the text in another text buffer to get the dimensions
-                message_width, message_height = self.get_text_size(message, self.font)
+                message_width, message_height = self.get_text_size(buffer_render.content, self.font)
 
                 # find the placement of the text buffer and overlay onto the screen buffer
-                x, y = location.place(message, self.font, message_width, message_height, self.display.WIDTH, self.display.HEIGHT)
-                draw.text((x, y), message, self.display.BLACK, self.font)
+                x, y = location.place(buffer_render.content, self.font, message_width, message_height, self.display.WIDTH, self.display.HEIGHT)
+                draw.text((x, y), buffer_render.content, self.display.BLACK, self.font)
 
             # flush the screen buffer to the device
             self.display.set_image(img)

@@ -1,7 +1,9 @@
 import enum
 import multiprocessing
 from threading import Lock
+from collections import namedtuple
 
+DEFAULT_FONT_SIZE = 12
 
 class AutoName(enum.Enum):
     def _generate_next_value_(name, start, count, last_values):
@@ -41,10 +43,13 @@ class Location(AutoName):
 
         raise RuntimeError("unimplemented location placement: %s" % repr(self))
 
+BufferRenderResult = namedtuple('BufferRenderResult', 'content font_size')
+
 class Buffer():
 
-    def __init__(self):
+    def __init__(self, font_size=DEFAULT_FONT_SIZE):
         self.lines = {} # {name: content}
+        self.font_size = font_size
 
     def update_row(self, name, content):
         self.lines[name] = content
@@ -56,7 +61,7 @@ class Buffer():
         ret = ""
         for name in sorted(self.lines.keys()):
             ret += self.lines[name] + "\n"
-        return ret
+        return BufferRenderResult(ret, self.font_size)
 
 
 class Screen():
@@ -65,8 +70,8 @@ class Screen():
         self.buffers = {} # {name : buffer}
         self.locations = {} # {name : location}
         self.lock = Lock()
-    
-    def register_buffer(self, buffer, location_str):
+
+    def register_buffer(self, buffer, location_str, font_size=DEFAULT_FONT_SIZE):
         with self.lock:
             location = Location(str(location_str).lower())
             
@@ -75,7 +80,7 @@ class Screen():
                     raise RuntimeError("location already taken by another buffer")
 
             if self.buffers.get(buffer) == None:
-                self.buffers[buffer] = Buffer()
+                self.buffers[buffer] = Buffer(font_size=font_size)
                 self.locations[buffer] = location
     
     def unregister_buffer(self, buffer):
