@@ -14,7 +14,7 @@ from device import InkyDeviceController
 
 class RPCServer():
 
-    def __init__(self, shutdown_event, render_queue, screen, host="localhost", port=5000, interval=10):
+    def __init__(self, shutdown_event, render_queue, screen, host="0.0.0.0", port=5000, interval=10):
         self.screen = screen
         self.port = port
         self.host = host
