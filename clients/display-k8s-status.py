@@ -116,8 +116,8 @@ def report_status(q):
 
             # only update the display if there is a display change
             if last_display != display :
-                proxy.update_row("nodes", "0", status)
-                proxy.update_row("nodes", "1", ip)
+                proxy.update_row("status", "0", status)
+                proxy.update_row("status", "1", ip)
 
                 last_display = display
 
