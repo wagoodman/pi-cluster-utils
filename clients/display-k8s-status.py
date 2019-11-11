@@ -94,8 +94,39 @@ def get_ip_address(ifname='eth0'):
         struct.pack('256s', ifname[:15].encode('utf-8'))
     )[20:24])
 
-
 def report_status(q):
+    last_update = datetime.datetime.now()
+    last_display = None
+    nodes = {} #{id: node}
+
+    with ServerProxy("http://localhost:5000/", allow_none=True) as proxy:
+
+        proxy.register_buffer("status", "lowerleft", 12)
+
+        while True:
+            node = q.get()
+            nodes[node.display_name] = node
+
+            timestamp = datetime.datetime.now()
+            print("%s %s %s %s" % (timestamp, node.identity, node.display_name, node.status))
+            elapsed = timestamp - last_update
+
+            num_ready_nodes = len([n for n in nodes.values() if node.status == "Ready"])
+            status = "Ready: {}".format(num_ready_nodes)
+            ip = get_ip_address()
+            display = (ip, status)
+
+            # only update the display if there is a display change (or it has been a minute since the last update)
+            if last_status.get(node.display_name) != status or elapsed > datetime.timedelta(minutes=1): 
+                proxy.update_row("nodes", "0", status)
+                proxy.update_row("nodes", "1", ip)
+
+                last_update = timestamp
+                last_display = display
+
+
+
+def report_status_verbose(q):
     last_update = datetime.datetime.now()
     last_status = {}
 
